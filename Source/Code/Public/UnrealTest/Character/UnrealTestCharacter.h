@@ -18,9 +18,6 @@ class AUnrealTestCharacter : public ACharacter
 
 public:
 	AUnrealTestCharacter();
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
-	float TurnRateGamepad;
 
 protected:
 	//UNREALOVERRIDES
@@ -208,6 +205,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
 	float ProjectileUpwardOffset;
 
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input, meta = (AllowPrivateAccess = "true"))
+	float TurnRateGamepad;
+	
 	//Montage to play when using ability
 	UPROPERTY(EditDefaultsOnly, Category = "AbilityMonatge", meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* AbilityMontage;

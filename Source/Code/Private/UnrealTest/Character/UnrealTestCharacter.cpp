@@ -208,7 +208,6 @@ void AUnrealTestCharacter::OnAction()
 		else
 		{
 			Server_OnAction();
-			CurrentDoor->ToggleDoor(ForwardVector);
 		}
 	}
 }
