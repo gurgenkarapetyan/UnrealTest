@@ -7,16 +7,12 @@
 
 AUT_DeathMatchGameState::AUT_DeathMatchGameState()
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameState::AUT_DeathMatchGameState"));
-
 	NumTeams = 2;
 	TeamScores.AddZeroed(NumTeams);
 }
 
 void AUT_DeathMatchGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameState::GetLifetimeReplicatedProps"));
-
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AUT_DeathMatchGameState, NumTeams);
@@ -25,7 +21,5 @@ void AUT_DeathMatchGameState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 
 TArray<int32> AUT_DeathMatchGameState::GetTeamScores() const
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameState::GetTeamScores"));
-
 	return TeamScores;
 }

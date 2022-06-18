@@ -17,7 +17,6 @@
 AUT_DeathMatchGameMode::AUT_DeathMatchGameMode(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::AUT_DeathMatchGameMode"));
 	DefaultPawnClass = AUnrealTestCharacter::StaticClass();
 	PlayerStateClass = AUT_PlayerState::StaticClass();
 	GameStateClass = AUT_DeathMatchGameState::StaticClass();
@@ -28,9 +27,6 @@ AUT_DeathMatchGameMode::AUT_DeathMatchGameMode(const FObjectInitializer& ObjectI
 
 AActor* AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation(AController* Player)
 {
-
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation"));
-
 	//Set Team
 	AUT_PlayerState* NewPlayerState = Cast<AUT_PlayerState>(Player->PlayerState);
 	const int32 TeamNum = ChooseTeam(NewPlayerState);
@@ -68,8 +64,6 @@ AActor* AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation(AController* Pl
 
 bool AUT_DeathMatchGameMode::CheckStartTeam(APlayerStart* PlayerStart, AController* Player) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::CheckStartTeam"));
-
 	if (Player)
 	{
 		AUT_CustomPlayerStart* customStart = Cast<AUT_CustomPlayerStart>(PlayerStart);
@@ -85,8 +79,6 @@ bool AUT_DeathMatchGameMode::CheckStartTeam(APlayerStart* PlayerStart, AControll
 
 void AUT_DeathMatchGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::HandleStartingNewPlayer_Implementation"));
-
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 
 	if (NumPlayers == 2)
@@ -98,8 +90,6 @@ void AUT_DeathMatchGameMode::HandleStartingNewPlayer_Implementation(APlayerContr
 
 void AUT_DeathMatchGameMode::Killed(AController* KilledPlayer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::Killed"));
-
 	AUT_PlayerState* killedPlayerState = KilledPlayer->PlayerState ? Cast<AUT_PlayerState>(KilledPlayer->PlayerState) : nullptr;
 
 	if (killedPlayerState)
@@ -111,8 +101,6 @@ void AUT_DeathMatchGameMode::Killed(AController* KilledPlayer)
 
 void AUT_DeathMatchGameMode::HandleKill(int32 Team)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::HandleKill"));
-
 	AUT_DeathMatchGameState* const gameState = GetWorld()->GetGameState<AUT_DeathMatchGameState>();
 	if (gameState)
 	{
@@ -130,8 +118,6 @@ void AUT_DeathMatchGameMode::HandleKill(int32 Team)
 
 int32 AUT_DeathMatchGameMode::ChooseTeam(AUT_PlayerState* PlayerState) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("AUT_DeathMatchGameMode::ChooseTeam"));
-
 	int32 playersTeam0 = 0;
 	int32 playersTeam1 = 0;
 

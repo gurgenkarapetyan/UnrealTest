@@ -9,48 +9,12 @@
 class UUT_HealthComponent;
 class AUT_BaseProjectile;
 class UAnimMontage;
-
+class ADoor;
 
 UCLASS(config=Game)
 class AUnrealTestCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
-private:
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
-
-	//Health Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health", meta = (AllowPrivateAccess = "true"))
-	UUT_HealthComponent* HealthComponent;
-
-	//Time To respawn
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Death", meta = (AllowPrivateAccess = "true"))
-	float TimeToRespawn;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<AUT_BaseProjectile> Projectile;
-
-	//Delay between shots in seconds.
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float AbilityFireRate;
-
-	//Projectile spawning position offset
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float ProjectileForwardOffset;	
-
-	//Projectile spawning position Offset
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float ProjectileUpwardOffset;
-
-	//Montage to play when using ability
-	UPROPERTY(EditDefaultsOnly, Category = "AbilityMonatge", meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* AbilityMontage;
 
 public:
 	AUnrealTestCharacter();
@@ -88,12 +52,25 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	void OnAction();
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_OnAction();
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
 
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
@@ -109,6 +86,8 @@ public:
 	void TurnBinding(class UInputComponent* PlayerInputComponent);
 	void LookUpBinding(class UInputComponent* PlayerInputComponent);
 	void TouchBinding(class UInputComponent* PlayerInputComponent);
+
+	void ActionBinding(class UInputComponent* PlayerInputComponent);
 	//Added Main Action
 	void MainActionBinding(class UInputComponent* PlayerInputComponent);
 
@@ -196,5 +175,44 @@ public:
 	void Multicast_PlayAnimation(UAnimMontage* MontageToPlay);
 	void Multicast_PlayAnimation_Implementation(UAnimMontage* MontageToPlay);
 
+
+private:
+	/** Camera boom positioning the camera behind the character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	class USpringArmComponent* CameraBoom;
+
+	/** Follow camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* FollowCamera;
+
+	//Health Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health", meta = (AllowPrivateAccess = "true"))
+	UUT_HealthComponent* HealthComponent;
+
+	//Time To respawn
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Death", meta = (AllowPrivateAccess = "true"))
+	float TimeToRespawn;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AUT_BaseProjectile> Projectile;
+
+	//Delay between shots in seconds.
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
+	float AbilityFireRate;
+
+	//Projectile spawning position offset
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
+	float ProjectileForwardOffset;	
+
+	//Projectile spawning position Offset
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
+	float ProjectileUpwardOffset;
+
+	//Montage to play when using ability
+	UPROPERTY(EditDefaultsOnly, Category = "AbilityMonatge", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* AbilityMontage;
+
+	UPROPERTY(Replicated)
+	ADoor* CurrentDoor;
 };
 

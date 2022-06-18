@@ -18,6 +18,7 @@
 #include "UnrealTest/Components/UT_HealthComponent.h"
 #include "UnrealTest/Projectile/UT_BaseProjectile.h"
 
+#include "UnrealTest/Items/Door.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealTestCharacter
@@ -50,6 +51,12 @@ AUnrealTestCharacter::AUnrealTestCharacter()
 	bReplicates = true;
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AUnrealTestCharacter::OnOverlapBegin);
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &AUnrealTestCharacter::OnOverlapEnd);
+
+	CurrentDoor = nullptr;
+
 }
 
 void AUnrealTestCharacter::DisableCotrollerRotation()
@@ -92,6 +99,29 @@ void AUnrealTestCharacter::SetFollowCamera()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 }
 
+void AUnrealTestCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor != nullptr && OtherActor != this && OtherComp != nullptr && OtherActor->GetClass()->IsChildOf(ADoor::StaticClass()))
+	{
+		CurrentDoor = Cast<ADoor>(OtherActor);
+	}
+}
+
+void AUnrealTestCharacter::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor != nullptr && OtherActor != this && OtherComp != nullptr)
+	{
+		CurrentDoor = nullptr;
+	}
+}
+
+void AUnrealTestCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AUnrealTestCharacter, CurrentDoor);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -109,7 +139,8 @@ void AUnrealTestCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	
 	TouchBinding(PlayerInputComponent);
 
-	MainActionBinding(PlayerInputComponent);
+	ActionBinding(PlayerInputComponent);
+	// MainActionBinding(PlayerInputComponent);
 }
 
 void AUnrealTestCharacter::JumpBinding(class UInputComponent* PlayerInputComponent)
@@ -145,6 +176,11 @@ void AUnrealTestCharacter::TouchBinding(class UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindTouch(IE_Released, this, &AUnrealTestCharacter::TouchStopped);
 }
 
+void AUnrealTestCharacter::ActionBinding(UInputComponent* PlayerInputComponent)
+{
+	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AUnrealTestCharacter::OnAction);
+}
+
 void AUnrealTestCharacter::MainActionBinding(UInputComponent* PlayerInputComponent)
 {
 	PlayerInputComponent->BindAction("MainAction", IE_Pressed, this, &AUnrealTestCharacter::UseMainAction);
@@ -158,6 +194,33 @@ void AUnrealTestCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector L
 void AUnrealTestCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
 	StopJumping();
+}
+
+void AUnrealTestCharacter::OnAction()
+{
+	if (CurrentDoor)
+	{
+		const FVector ForwardVector = FollowCamera->GetForwardVector();
+		if (HasAuthority())
+		{
+			CurrentDoor->ToggleDoor(ForwardVector);
+		}
+		else
+		{
+			Server_OnAction();
+			CurrentDoor->ToggleDoor(ForwardVector);
+		}
+	}
+}
+
+void AUnrealTestCharacter::Server_OnAction_Implementation()
+{
+	OnAction();
+}
+
+bool AUnrealTestCharacter::Server_OnAction_Validate()
+{
+	return true;
 }
 
 void AUnrealTestCharacter::TurnAtRate(float Rate)
