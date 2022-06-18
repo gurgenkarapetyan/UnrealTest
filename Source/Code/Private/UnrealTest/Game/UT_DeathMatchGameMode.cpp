@@ -1,14 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "UnrealTest/Game/UT_DeathMatchGameMode.h"
 
-//Unreal includes
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/GameStateBase.h"
 
-//ProjectIncludes 
 #include "UnrealTest/Character/UT_PlayerState.h"
 #include "UnrealTest/Character/UnrealTestCharacter.h"
 #include "UnrealTest/Game/UT_DeathMatchGameState.h"
@@ -22,7 +19,6 @@ AUT_DeathMatchGameMode::AUT_DeathMatchGameMode(const FObjectInitializer& ObjectI
 	GameStateClass = AUT_DeathMatchGameState::StaticClass();
 
 	NumTeams = 2;
-	NumberOfKillsNeededToEndMatch = 10;
 }
 
 AActor* AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -33,8 +29,8 @@ AActor* AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation(AController* Pl
 	NewPlayerState->SetTeamNum(TeamNum);
 	
 	//Choose start
-	TArray<APlayerStart*> posibleSpawns;
-	APlayerStart* bestStart = nullptr;
+	TArray<APlayerStart*> PossibleSpawns;
+	APlayerStart* BestStart = nullptr;
 
 	//Get All SpawnPoints from map
 	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
@@ -45,21 +41,21 @@ AActor* AUT_DeathMatchGameMode::ChoosePlayerStart_Implementation(AController* Pl
 			//Check team restrictions
 			if (CheckStartTeam(start, Player))
 			{
-				posibleSpawns.Add(start);
+				PossibleSpawns.Add(start);
 			}
 		}
 	}
 
-	//Choose Random StartPos
-	if (!bestStart)
+	//Choose Random Start Position
+	if (!BestStart)
 	{
-		if (posibleSpawns.Num() > 0)
+		if (PossibleSpawns.Num() > 0)
 		{
-			bestStart = posibleSpawns[FMath::RandHelper(posibleSpawns.Num())];
+			BestStart = PossibleSpawns[FMath::RandHelper(PossibleSpawns.Num())];
 		}
 	}
-	//In case no best start start by default
-	return bestStart ? bestStart : Super::ChoosePlayerStart_Implementation(Player);
+	// In case no best start start by default
+	return BestStart ? BestStart : Super::ChoosePlayerStart_Implementation(Player);
 }
 
 bool AUT_DeathMatchGameMode::CheckStartTeam(APlayerStart* PlayerStart, AController* Player) const
@@ -69,7 +65,7 @@ bool AUT_DeathMatchGameMode::CheckStartTeam(APlayerStart* PlayerStart, AControll
 		AUT_CustomPlayerStart* customStart = Cast<AUT_CustomPlayerStart>(PlayerStart);
 		AUT_PlayerState* playerState = Cast<AUT_PlayerState>(Player->PlayerState);
 
-		if (playerState && customStart && customStart->SpawnTeam == playerState->GetTeamNum())
+		if (playerState && customStart && customStart->GetSpawnTeam() == playerState->GetTeamNum())
 		{
 			return true;
 		}
@@ -88,50 +84,22 @@ void AUT_DeathMatchGameMode::HandleStartingNewPlayer_Implementation(APlayerContr
 	}
 }
 
-void AUT_DeathMatchGameMode::Killed(AController* KilledPlayer)
-{
-	AUT_PlayerState* killedPlayerState = KilledPlayer->PlayerState ? Cast<AUT_PlayerState>(KilledPlayer->PlayerState) : nullptr;
-
-	if (killedPlayerState)
-	{
-		killedPlayerState->AddDeath(killedPlayerState->TeamNumber);
-		HandleKill(killedPlayerState->GetTeamNum());
-	}
-}
-
-void AUT_DeathMatchGameMode::HandleKill(int32 Team)
-{
-	AUT_DeathMatchGameState* const gameState = GetWorld()->GetGameState<AUT_DeathMatchGameState>();
-	if (gameState)
-	{
-		for (size_t i = 0; i < gameState->TeamScores.Num(); i++)
-		{
-			if (gameState->TeamScores[i] == NumberOfKillsNeededToEndMatch)
-			{
-				OnMatchEnd.Broadcast();
-
-				EndMatch();
-			}
-		}
-	}
-}
-
 int32 AUT_DeathMatchGameMode::ChooseTeam(AUT_PlayerState* PlayerState) const
 {
-	int32 playersTeam0 = 0;
-	int32 playersTeam1 = 0;
+	int32 PlayersTeam0 = 0;
+	int32 PlayersTeam1 = 0;
 
 	// Array of all Player States
 	for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
 	{
-		AUT_PlayerState* state = Cast<AUT_PlayerState>(GameState->PlayerArray[i]);
-		if (state)
+		if (AUT_PlayerState* State = Cast<AUT_PlayerState>(GameState->PlayerArray[i]))
 		{
-			//Add one in case 
-			state->GetTeamNum() == 0 ? playersTeam0++ : playersTeam1++;
+			// Add one in case 
+			State->GetTeamNum() == 0 ? PlayersTeam0++ : PlayersTeam1++;
 		}
 	}
-	//return the index of the team least populated
-	return playersTeam0 <= playersTeam1 ? 0 : 1;
+	
+	// return the index of the team least populated
+	return PlayersTeam0 <= PlayersTeam1 ? 0 : 1;
 }
 

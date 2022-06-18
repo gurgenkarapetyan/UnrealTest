@@ -19,27 +19,24 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	//Team ID
-	UPROPERTY(ReplicatedUsing = OnRep_TeamNumberChanged)
-	int32 TeamNumber;
+	// Updates Mesh Colors With the team id -- Red or Blue
+	void UpdateTeamColors() const;
+	
+	// Sets Team
+	void SetTeamNum(int32 NewTeamNumber);
+	
+	// Get Team
+	UFUNCTION(BlueprintCallable)
+	int32 GetTeamNum() const;
 	
 	UFUNCTION()
 	void OnRep_TeamNumberChanged();
 	
-	//Times has died this pawn
+	// Team ID
+	UPROPERTY(ReplicatedUsing = OnRep_TeamNumberChanged)
+	int32 TeamNumber;
+	
+	// Times has died this pawn
 	UPROPERTY(Replicated)
 	int32 NumDeaths;
-
-	// Player Died
-	void AddDeath(const int32 Team);
-	
-	//Sets Team
-	void SetTeamNum(int32 NewTeamNumber);
-	
-	//Get Team
-	UFUNCTION(BlueprintCallable)
-	int32 GetTeamNum() const;
-	
-	//Updates Mesh Colors With the team id -- Red or Blue
-	void UpdateTeamColors();	
 };

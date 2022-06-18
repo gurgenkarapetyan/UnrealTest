@@ -6,9 +6,6 @@
 #include "GameFramework/Character.h"
 #include "UnrealTestCharacter.generated.h"
 
-class UUT_HealthComponent;
-class AUT_BaseProjectile;
-class UAnimMontage;
 class ADoor;
 
 UCLASS(config=Game)
@@ -19,10 +16,50 @@ class AUnrealTestCharacter : public ACharacter
 public:
 	AUnrealTestCharacter();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	void DisableControllerRotation();
+	void ConfigureCharacterMovement(class UCharacterMovementComponent* characterMovement);
+	void SetCameraBoom();
+	void SetFollowCamera();
+
+	void JumpBinding(class UInputComponent* PlayerInputComponent);
+	void MovementBinding(class UInputComponent* PlayerInputComponent);
+	void TurnBinding(class UInputComponent* PlayerInputComponent);
+	void LookUpBinding(class UInputComponent* PlayerInputComponent);
+	void TouchBinding(class UInputComponent* PlayerInputComponent);
+
+	void ActionBinding(class UInputComponent* PlayerInputComponent);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayAnimation(UAnimMontage* MontageToPlay);
+	void Multicast_PlayAnimation_Implementation(UAnimMontage* MontageToPlay);
+	
+	
+	/** */
+	//TEAM
+	// Update the team color of all player meshes.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void UpdateTeamColors(int32 TeamColor);
+
+	int32 GetPlayerTeam() const;
+
 protected:
-	//UNREALOVERRIDES
 	virtual void PossessedBy(class AController* C) override;
 
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
 	virtual void OnRep_PlayerState() override;
 
 	/** Called for forwards/backward input */
@@ -54,124 +91,33 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_OnAction();
 
-protected:
-	// APawn interface
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// End of APawn interface
-
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-public:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
-	void DisableCotrollerRotation();
-	void ConfigureCharacterMovement(class UCharacterMovementComponent* characterMovement);
-	void SetCameraBoom();
-	void SetFollowCamera();
-
-	void JumpBinding(class UInputComponent* PlayerInputComponent);
-	void MovementBinding(class UInputComponent* PlayerInputComponent);
-	void TurnBinding(class UInputComponent* PlayerInputComponent);
-	void LookUpBinding(class UInputComponent* PlayerInputComponent);
-	void TouchBinding(class UInputComponent* PlayerInputComponent);
-
-	void ActionBinding(class UInputComponent* PlayerInputComponent);
-	//Added Main Action
-	void MainActionBinding(class UInputComponent* PlayerInputComponent);
-
-	const float TURN_RATE_GAMEPAD = 50.f;
-	const float JUMP_Z_VELOCITY= 700.f;
-	const float AIR_CONTROL = 0.35f;
-	const float MAX_WALK_SPEED = 500.f;
-	const float MIN_ANALOG_WALK_SPEED = 20.f;
-	const float BRAKING_DECELERATION_WALKING = 2000.f;
-
-	//Getter of the Health Component
-	UFUNCTION(BlueprintCallable)
-	UUT_HealthComponent* GetHealthComponent() const;
-
-	// Sets Health Compononent and binds death events to player
-	void SetHealthComponent();
-
-	//Wrapper function to take damage in the player
-	void ReceiveDamage(const float Damage);
-
-	//Die Function called when health component send the event
-	UFUNCTION()
-	void Die(AActor* ActorToDie);
-
-	//Notify GM that player has died to update GameState
-	void NotifyGameModeDeath();
-
-	UFUNCTION()
-	void RespawnCharacter();
-
-	void UseMainAction();
-
-	//TEAM
-	// Update the team color of all player meshes.
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void UpdateTeamColors(int32 TeamColor);
-
-	int32 GetPlayerTeam() const;
-
 private:
-	//Functions tp Enable/Disable Capsule collision
+	/** */
+	// Functions tp Enable/Disable Capsule collision
 	void EnableCapsuleCollision();
-	void DisableCapsuleCollision();
+	void DisableCapsuleCollision() const;
 
-	//Functions to Enable/Disable movement
-	void EnableMovement();
-	void DisableMovement();
+	/** */
+	// Functions to Enable/Disable movement
+	void EnableMovement() const;
+	void DisableMovement() const;
 
+	/** */
 	//Functions to Enable/Disable Input
 	void EnablePlayerInput();
 	void DisablePlayerInput();
 
-	//Do Ragdoll Anim Server and Clients
+	/** */
+	// Do Ragdoll Anim Server and Clients
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ApplyRagdoll();
 	void Multicast_ApplyRagdoll_Implementation();
-	
-	//Reattach Ragdoll to capsule
+
+	/** */
+	// Reattach Ragdoll to capsule
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ReAttachRagdoll();
 	void Multicast_ReAttachRagdoll_Implementation();
-
-	//ABILITIES
-protected:
-	//If true, we are in the process of using ability
-	bool bIsFiringAbility;
-
-	//Function for beginning ability fire.
-	UFUNCTION(BlueprintCallable, Category = "Shoot")
-	void StartAbility();
-
-	//Function for ending weapon fire. Once this is called, the player can use StartFire again.
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	void StopAbility();
-
-	// A timer handle used for providing the fire rate delay in-between spawns
-	FTimerHandle FiringTimer;
-
-public:
-	UFUNCTION(Server, Reliable)
-	void Server_DoMainAction();
-	void Server_DoMainAction_Implementation();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayAnimation(UAnimMontage* MontageToPlay);
-	void Multicast_PlayAnimation_Implementation(UAnimMontage* MontageToPlay);
-
 
 private:
 	/** Camera boom positioning the camera behind the character */
@@ -182,38 +128,18 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	//Health Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health", meta = (AllowPrivateAccess = "true"))
-	UUT_HealthComponent* HealthComponent;
-
-	//Time To respawn
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Death", meta = (AllowPrivateAccess = "true"))
-	float TimeToRespawn;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<AUT_BaseProjectile> Projectile;
-
-	//Delay between shots in seconds.
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float AbilityFireRate;
-
-	//Projectile spawning position offset
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float ProjectileForwardOffset;	
-
-	//Projectile spawning position Offset
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile", meta = (AllowPrivateAccess = "true"))
-	float ProjectileUpwardOffset;
-
+	UPROPERTY(Replicated)
+	ADoor* CurrentDoor;
+	
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input, meta = (AllowPrivateAccess = "true"))
 	float TurnRateGamepad;
 	
-	//Montage to play when using ability
-	UPROPERTY(EditDefaultsOnly, Category = "AbilityMonatge", meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* AbilityMontage;
-
-	UPROPERTY(Replicated)
-	ADoor* CurrentDoor;
+	const float TURN_RATE_GAMEPAD = 50.f;
+	const float JUMP_Z_VELOCITY= 700.f;
+	const float AIR_CONTROL = 0.35f;
+	const float MAX_WALK_SPEED = 500.f;
+	const float MIN_ANALOG_WALK_SPEED = 20.f;
+	const float BRAKING_DECELERATION_WALKING = 2000.f;
 };
 

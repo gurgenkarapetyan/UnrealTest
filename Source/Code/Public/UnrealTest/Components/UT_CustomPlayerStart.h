@@ -16,7 +16,10 @@ class UNREALTEST_API AUT_CustomPlayerStart : public APlayerStart
 
 public:
 	AUT_CustomPlayerStart(const FObjectInitializer& ObjectInitializer);
-	
-	UPROPERTY(EditAnywhere, Category = "Team")
+
+	FORCEINLINE int32 GetSpawnTeam() const { return SpawnTeam; }
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Team", meta = (AllowPrivateAccess = "true"))
 	int32 SpawnTeam;
 };

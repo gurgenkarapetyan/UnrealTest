@@ -2,7 +2,6 @@
 
 #include "UnrealTest/Character/UnrealTestCharacter.h"
 
-//unreal Includes
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -10,18 +9,11 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "Engine/Engine.h"
 
-//Porject Includes
 #include "UnrealTest/Game/UT_DeathMatchGameMode.h"
 #include "UnrealTest/Character/UT_PlayerState.h"
-#include "UnrealTest/Components/UT_HealthComponent.h"
-#include "UnrealTest/Projectile/UT_BaseProjectile.h"
 
 #include "UnrealTest/Items/Door.h"
-
-//////////////////////////////////////////////////////////////////////////
-// AUnrealTestCharacter
 
 AUnrealTestCharacter::AUnrealTestCharacter()
 {
@@ -31,23 +23,13 @@ AUnrealTestCharacter::AUnrealTestCharacter()
 	// set our turn rate for input
 	TurnRateGamepad = TURN_RATE_GAMEPAD;
 
-	DisableCotrollerRotation();
+	DisableControllerRotation();
 
 	ConfigureCharacterMovement(GetCharacterMovement());
 	
 	SetCameraBoom();
 	SetFollowCamera();
-
-	//HealthComponent
-	SetHealthComponent();
-
-	//FireAbility
-	AbilityFireRate = 1.0f;
-	bIsFiringAbility = false;
-
-	ProjectileForwardOffset = 100.0f;
-	ProjectileUpwardOffset = 25.0f;
-
+	
 	bReplicates = true;
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -56,10 +38,9 @@ AUnrealTestCharacter::AUnrealTestCharacter()
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &AUnrealTestCharacter::OnOverlapEnd);
 
 	CurrentDoor = nullptr;
-
 }
 
-void AUnrealTestCharacter::DisableCotrollerRotation()
+void AUnrealTestCharacter::DisableControllerRotation()
 {
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -140,7 +121,6 @@ void AUnrealTestCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	TouchBinding(PlayerInputComponent);
 
 	ActionBinding(PlayerInputComponent);
-	// MainActionBinding(PlayerInputComponent);
 }
 
 void AUnrealTestCharacter::JumpBinding(class UInputComponent* PlayerInputComponent)
@@ -179,11 +159,6 @@ void AUnrealTestCharacter::TouchBinding(class UInputComponent* PlayerInputCompon
 void AUnrealTestCharacter::ActionBinding(UInputComponent* PlayerInputComponent)
 {
 	PlayerInputComponent->BindAction("Action", IE_Pressed, this, &AUnrealTestCharacter::OnAction);
-}
-
-void AUnrealTestCharacter::MainActionBinding(UInputComponent* PlayerInputComponent)
-{
-	PlayerInputComponent->BindAction("MainAction", IE_Pressed, this, &AUnrealTestCharacter::UseMainAction);
 }
 
 void AUnrealTestCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
@@ -288,89 +263,6 @@ void AUnrealTestCharacter::MoveRight(float Value)
 	}
 }
 
-UUT_HealthComponent* AUnrealTestCharacter::GetHealthComponent() const
-{
-	return HealthComponent;
-}
-
-void AUnrealTestCharacter::SetHealthComponent()
-{
-	// Create a healthComp
-	HealthComponent = CreateDefaultSubobject<UUT_HealthComponent>(TEXT("HealthComponent"));
-	HealthComponent->OnActorDieEvent.AddUniqueDynamic(this, &AUnrealTestCharacter::Die);
-	HealthComponent->SetIsReplicated(true);
-}
-
-void AUnrealTestCharacter::ReceiveDamage(const float Damage)
-{
-	if (!HealthComponent)
-	{
-		return;
-	}
-
-	HealthComponent->TakeDamage(Damage);
-}
-
-void AUnrealTestCharacter::Die(AActor* ActorToDie)
-{
-	if (ActorToDie == this)
-	{
-		//GameMode Kill Character
-		NotifyGameModeDeath();
-
-		// Disable all collision on capsule
-		DisableCapsuleCollision();
-
-		//Disable Movement
-		DisableMovement();
-
-		//Disable Player Input
-		DisablePlayerInput();
-
-		//DoRagdoll
-		Multicast_ApplyRagdoll();
-
-		//Respawn Character after delay
-		FTimerHandle timerHandle;
-		GetWorldTimerManager().SetTimer(timerHandle, this, &AUnrealTestCharacter::RespawnCharacter, TimeToRespawn, false);
-	}
-}
-
-void AUnrealTestCharacter::NotifyGameModeDeath()
-{
-	AController* killer = GetController();
-	if (killer)
-	{
-		GetWorld()->GetAuthGameMode<AUT_DeathMatchGameMode>()->Killed(killer);
-	}
-}
-
-void AUnrealTestCharacter::RespawnCharacter()
-{
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		//Reset Health to MAX
-		if (HealthComponent)
-		{
-			HealthComponent->ResetHealthToMax();
-		}
-
-		//Reenable movement and collision
-		EnableMovement();
-		EnableCapsuleCollision();
-
-		//Enable Player Input again
-		EnablePlayerInput();
-		//Reattach mesh after doing Ragdoll
-		Multicast_ReAttachRagdoll();
-	}
-}
-
-void AUnrealTestCharacter::UseMainAction()
-{
-	StartAbility();
-}
-
 void AUnrealTestCharacter::Multicast_ApplyRagdoll_Implementation()
 {
 	if (!GetMesh())
@@ -411,52 +303,19 @@ void AUnrealTestCharacter::Multicast_ReAttachRagdoll_Implementation()
 	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 }
 
-void AUnrealTestCharacter::StartAbility()
-{
-	if (!bIsFiringAbility)
-	{
-		bIsFiringAbility = true;
-		GetWorld()->GetTimerManager().SetTimer(FiringTimer, this, &AUnrealTestCharacter::StopAbility, AbilityFireRate, false);
-		Server_DoMainAction();
-	}
-}
-
-void AUnrealTestCharacter::StopAbility()
-{
-	bIsFiringAbility = false;
-}
-
-void AUnrealTestCharacter::Server_DoMainAction_Implementation()
-{
-	//Broadcast Anim To Play
-	Multicast_PlayAnimation(AbilityMontage);
-
-	//Spawn Projectile in frint of character with an offest 
-	FVector spawnLocation = GetActorLocation() + (GetControlRotation().Vector() * ProjectileForwardOffset) + (GetActorUpVector() * ProjectileUpwardOffset);
-	FRotator spawnRotation = GetControlRotation();
-
-	//Set Spawn Params
-	FActorSpawnParameters spawnParameters;
-	spawnParameters.Instigator = GetInstigator();
-	spawnParameters.Owner = this;	
-
-	//Spawns Projectile
-	GetWorld()->SpawnActor<AUT_BaseProjectile>(Projectile, spawnLocation, spawnRotation, spawnParameters);
-}
-
 void AUnrealTestCharacter::Multicast_PlayAnimation_Implementation(UAnimMontage* MontageToPlay)
 {
 	if (GetMesh())
 	{
-		UAnimInstance* animInstance = GetMesh()->GetAnimInstance();
-		if (animInstance)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
 		{
-			animInstance->Montage_Play(MontageToPlay);
+			AnimInstance->Montage_Play(MontageToPlay);
 		}
 	}
 }
 
-void AUnrealTestCharacter::EnableMovement()
+void AUnrealTestCharacter::EnableMovement() const
 {
 	if (UCharacterMovementComponent* CharacterComp = Cast<UCharacterMovementComponent>(GetMovementComponent()))
 	{
@@ -464,7 +323,7 @@ void AUnrealTestCharacter::EnableMovement()
 	}
 }
 
-void AUnrealTestCharacter::DisableMovement()
+void AUnrealTestCharacter::DisableMovement() const
 {
 	if (UCharacterMovementComponent* CharacterComp = Cast<UCharacterMovementComponent>(GetMovementComponent()))
 	{
@@ -512,7 +371,7 @@ void AUnrealTestCharacter::EnableCapsuleCollision()
 	}
 }
 
-void AUnrealTestCharacter::DisableCapsuleCollision()
+void AUnrealTestCharacter::DisableCapsuleCollision() const
 {
 	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
 	{

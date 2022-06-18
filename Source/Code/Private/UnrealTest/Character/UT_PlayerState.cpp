@@ -3,13 +3,9 @@
 
 #include "UnrealTest/Character/UT_PlayerState.h"
 
-//Unreal Includes
 #include "Net/UnrealNetwork.h"	
-#include "GameFramework/PlayerController.h"
 
-//Porject Includes 
 #include "UnrealTest/Character/UnrealTestCharacter.h"
-#include "UnrealTest/Game/UT_DeathMatchGameState.h"
 
 AUT_PlayerState::AUT_PlayerState()
 {
@@ -24,20 +20,8 @@ void AUT_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 void AUT_PlayerState::OnRep_TeamNumberChanged()
 {
-	//In case team has changed update colores
+	// In case team has changed update colours
 	UpdateTeamColors();
-}
-
-void AUT_PlayerState::AddDeath(const int32 Team)
-{
-	//Change team because increment deaths on the other team
-	int32 otherTeam = Team == 0 ? 1 : 0;
-
-	AUT_DeathMatchGameState* const gameState = GetWorld()->GetGameState<AUT_DeathMatchGameState>();
-	if (gameState)
-	{
-		gameState->TeamScores[otherTeam]++;	
-	}
 }
 
 void AUT_PlayerState::SetTeamNum(int32 NewTeamNumber)
@@ -51,7 +35,7 @@ int32 AUT_PlayerState::GetTeamNum() const
 	return TeamNumber;
 }
 
-void AUT_PlayerState::UpdateTeamColors()
+void AUT_PlayerState::UpdateTeamColors() const
 {
 	if (AController* OwnerController = Cast<AController>(GetOwner()))
 	{
